@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import json
 import jsonlines
 
@@ -19,6 +20,7 @@ import time
 from tqdm import tqdm
 import torch
 from torch import nn
+# torchtext的版本应用为0.4.0
 import torchtext.vocab as Vocab
 import torch.utils.data as Data
 import torch.nn.functional as F
@@ -159,7 +161,10 @@ def train(train_iter,  net, loss, optimizer, device, num_epochs):
     net = net.to(device)
     print("training on ", device)
     batch_count = 0
-    for epoch in range(num_epochs):
+    for epoch in tqdm(range(num_epochs)):
+        if (epoch+1) % 10 == 0:
+            for p in optimizer.param_groups:
+                p['lr'] *= 0.9
         train_l_sum, train_acc_sum, n, start = 0.0, 0.0, 0, time.time()
         for X, y in train_iter:
             X = X.to(device)
@@ -178,7 +183,8 @@ def train(train_iter,  net, loss, optimizer, device, num_epochs):
         # test_acc = evaluate_accuracy(test_iter, net)
         print('epoch %d, loss %.4f, train acc %.3f,  time %.1f sec'
               % (epoch + 1, train_l_sum / batch_count, train_acc_sum / n, time.time() - start))
-    save(num_epochs)
+        if (epoch+1) %5==0:
+            save(epoch)
 
 lr, num_epochs = 0.01, 500
 optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=lr)
